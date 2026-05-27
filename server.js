@@ -11,18 +11,18 @@ app.post('/api/generate', async (req, res) => {
   try {
     const { title, background, colors, specs } = req.body;
     
-    // Создаём 5 разных промптов для вариативности
+      // Создаём 5 разных промптов с чёткой структурой
     const urls = Array.from({ length: 5 }, (_, i) => {
-      const style = i === 0 ? 'professional product photography' :
-                    i === 1 ? 'clean minimalist design' :
-                    i === 2 ? 'vibrant marketing layout' :
-                    i === 3 ? 'soft studio lighting' : 'modern e-commerce style';
+      const style = i === 0 ? 'professional product photography, clean studio lighting' :
+                    i === 1 ? 'minimalist e-commerce design, white background' :
+                    i === 2 ? 'vibrant marketing layout, eye-catching colors' :
+                    i === 3 ? 'premium product card, soft shadows, elegant' : 'modern marketplace style, high contrast';
       
-      const prompt = `Infographic card for "${title}". Background: ${background || 'studio'}. Colors: ${colors || 'modern'}. Features: "${specs || ''}". Style: ${style}, high quality, commercial.`;
+      // Улучшенный промпт с акцентом на текст и характеристики
+      const prompt = `Product card for marketplace. Main object: ${title}. Background: ${background || 'clean white studio'}. Color scheme: ${colors || 'modern balanced'}. Display these features prominently: ${specs || ''}. Style: ${style}. Professional quality, text must be clear and readable, commercial photography, e-commerce standard.`;
       
-      // Уникальный seed для каждой карточки, чтобы они отличались
       const seed = Math.floor(Math.random() * 999999);
-      return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}`;
+      return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true&seed=${seed}&enhance=true`;
     });
 
     res.json({ urls });
