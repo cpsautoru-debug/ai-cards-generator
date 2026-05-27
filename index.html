@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Карточки Товара</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+    body { background: #f5f7fa; color: #111; padding: 20px; line-height: 1.5; }
+    .wrap { max-width: 800px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+    label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 0.9rem; }
+    input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 12px; }
+    button { background: #2563eb; color: #fff; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: 0.6; }
+    .loader { display: none; text-align: center; padding: 20px; }
+    .spin { width: 30px; height: 30px; border: 3px solid #e5e7eb; border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result-img { width: 100%; border-radius: 8px; cursor: pointer; }
+    .down { display: block; text-align: center; background: #10b981; color: #fff; padding: 6px; border-radius: 6px; text-decoration: none; margin-top: 6px; font-size: 0.85rem; }
+    .err { background: #fee2e2; color: #b91c1c; padding: 10px; border-radius: 8px; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🖼️ Генератор карточек</h1>
+    <div class="card">
+      <label>Фото товара</label>
+      <input type="file" id="img" accept="image/*">
+      <label>Название</label>
+      <input type="text" id="title" placeholder="Например: Наушники X2">
+      <label>Фон</label>
+      <input type="text" id="bg" placeholder="Дерево, градиент, студия...">
+      <label>Цвета/Стиль</label>
+      <input type="text" id="colors" placeholder="Белый, синий, минимализм...">
+      <label>Характеристики</label>
+      <textarea id="specs" rows="2" placeholder="20ч работы, Bluetooth 5.3, вес 45г..."></textarea>
+      <button id="gen">🚀 Сгенерировать 5 карточек</button>
+      <div id="err" class="err"></div>
+    </div>
+    <div id="load" class="loader"><div class="spin"></div><p>ИИ рисует... (~20 сек)</p></div>
+    <div id="res" class="grid"></div>
+  </div>
+
+  <script>
+    const imgInput = document.getElementById('img');
+    document.getElementById('gen').addEventListener('click', async () => {
+      const btn = document.getElementById('gen');
+      const load = document.getElementById('load');
+      const err = document.getElementById('err');
+      const res = document.getElementById('res');
+      
+      if (!imgInput.files[0] || !document.getElementById('title').value.trim()) {
+        err.textContent = 'Загрузите фото и введите название!';
+        err.style.display = 'block';
+        return;
+      }
+
+      btn.disabled = true;
+      load.style.display = 'block';
+      err.style.display = 'none';
+      res.innerHTML = '';
+
+      try {
+        const toBase64 = file => new Promise((ok, no) => {
+          const r = new FileReader();
+          r.onload = () => ok(r.result.split(',')[1]);
+          r.onerror = no;
+          r.readAsDataURL(file);
+        });
+
+        const payload = {
+          image: await toBase64(imgInput.files[0]),
+          title: document.getElementById('title').value,
+          background: document.getElementById('bg').value,
+          colors: document.getElementById('colors').value,
+          specs: document.getElementById('specs').value
+        };
+
+        const resp = await fetch('http://localhost:3000/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!resp.ok) throw new Error('Ошибка сервера');
+        const data = await resp.json();
+
+        data.urls.forEach((url, i) => {
+          const div = document.createElement('div');
+          div.innerHTML = `<img src="${url}" class="result-img"><a href="${url}" download="card_${i+1}.png" class="down">⬇️ Скачать</a>`;
+          res.appendChild(div);
+        });
+      } catch (e) {
+        err.textContent = e.message;
+        err.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        load.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>
